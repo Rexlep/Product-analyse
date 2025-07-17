@@ -98,9 +98,10 @@ def write_new_information():
             writer = csv.writer(csvfile)
             writer.writerow(data)
 
-            test = [customer_id_entry, quantity_entry, price_entry, product_name_entry, date_entry]
-
-            for i in test:
+            # Add all text inputs in a list to iterate into it and delete the text in it
+            all_entry = [customer_id_entry, quantity_entry, price_entry, product_name_entry, date_entry]
+            # Loop for iterate on the text inputs list
+            for i in all_entry:
                 i.delete(0, 'end')
 
             # Show message when the data has been added
@@ -111,13 +112,129 @@ def expense_tracker():
     # Read the file and change it into data frame
     df = pd.read_csv('products.csv')
 
-    df['total price'] = df['quantity'] * df['price']
+    df['total price'] = (df['quantity'] * df['price']).apply(lambda x: f"{x} $")
 
     # Delete the old stuf in list box
     expense_tracker_list_box.delete('0.0', 'end')
     # Insert the data frame in list box
     expense_tracker_list_box.insert('0.0', df.to_string())
 
+
+def checkbox_event():
+    """This function is called when the checkbox is clicked"""
+    reverse = checkbox.get()  # Get the value of the checkbox
+    value = combobox_expense_tracker.get()  # Get the value of the combobox
+    df = pd.read_csv('products.csv')
+    df['total price'] = (df['quantity'] * df['price']).apply(lambda x: f"{x} $")
+
+    if value == 'Date':
+        df = df.sort_values(by='date', ascending=not reverse).reset_index(drop=True)
+    elif value == 'Price':
+        df = df.sort_values(by='price', ascending=not reverse).reset_index(drop=True)
+    elif value == 'Quantity':
+        df = df.sort_values(by='quantity', ascending=not reverse).reset_index(drop=True)
+    elif value == 'Normal':
+        df = df.sort_values(by='date', ascending=not reverse).reset_index(drop=True)
+
+    expense_tracker_list_box.delete('0.0', 'end')
+    expense_tracker_list_box.insert('0.0', df.to_string())
+
+
+def change_order(value):
+    """This function changes the order of df based on user choice"""
+    print('This is the user ',  value)
+
+    if value == 'Normal':
+        df = pd.read_csv('products.csv')
+        
+        # Make a total price column and put a dolor sign right to it
+        df['total price'] = (df['quantity'] * df['price']).apply(lambda x: f"{x} $")
+
+        # Delete the old stuf in list box
+        expense_tracker_list_box.delete('0.0', 'end')
+        # Insert the data frame in list box
+        expense_tracker_list_box.insert('0.0', df.to_string())
+
+
+    if value == 'Date':
+        df = pd.read_csv('products.csv')
+        
+        # Make a total price column and put a dolor sign right to it
+        df['total price'] = (df['quantity'] * df['price']).apply(lambda x: f"{x} $")
+
+        df = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+
+        # Delete the old stuf in list box
+        expense_tracker_list_box.delete('0.0', 'end')
+        # Insert the data frame in list box
+        expense_tracker_list_box.insert('0.0', df.to_string())
+
+    if value == 'Price':
+        df = pd.read_csv('products.csv')
+        
+        # Make a total price column and put a dolor sign right to it
+        df['total price'] = (df['quantity'] * df['price']).apply(lambda x: f"{x} $")
+
+        df = df.sort_values(by='price', ascending=False).reset_index(drop=True)
+
+        # Delete the old stuf in list box
+        expense_tracker_list_box.delete('0.0', 'end')
+        # Insert the data frame in list box
+        expense_tracker_list_box.insert('0.0', df.to_string())
+
+    if value == 'Quantity':
+        df = pd.read_csv('products.csv')
+        
+        # Make a total price column and put a dolor sign right to it
+        df['total price'] = (df['quantity'] * df['price']).apply(lambda x: f"{x} $")
+
+        df = df.sort_values(by='price', ascending=False).reset_index(drop=True)
+
+        # Delete the old stuf in list box
+        expense_tracker_list_box.delete('0.0', 'end')
+        # Insert the data frame in list box
+        expense_tracker_list_box.insert('0.0', df.to_string())
+
+
+def product_analyse():
+    """This function analyse products with their sales"""
+    df1 = pd.read_csv('products.csv')
+
+    df2 = pd.DataFrame({
+        'Product': df1['product_name'],
+        'Quantity': df1['quantity']
+    })
+
+    df2['Quantity'] = pd.to_numeric(df2['Quantity'], errors='coerce')
+
+    grouped = df2.groupby('Product').agg({
+        'Quantity': 'sum'
+    }).reset_index()
+
+    df1['date'] = pd.to_datetime(df1['date'])
+
+    grouped['Month'] = df1['date'].dt.month_name()
+    grouped['Date']  = df1['date']
+
+    date_sale = grouped.groupby('Date')['Quantity'].sum()
+
+    # This parts analyse the total sale
+    total_sale = grouped.groupby('Month')['Quantity'].sum()
+
+    print(date_sale)
+
+    for month, total in total_sale.items():
+        if total > 10:
+            product_analyse_list_box2.insert('0.0', f"In {month}, high total sales were recorded ({total} items)\n")
+
+
+    for date, total in date_sale.items():
+        if total > 100:
+            product_analyse_list_box2.insert('0.0', f"In {date} {total} recorded\n")
+ 
+
+    product_analyse_list_box.delete('0.0', 'end')
+    product_analyse_list_box.insert('0.0', grouped.to_string(index=False))
 
 
 # -------------------- UI --------------------
@@ -166,6 +283,13 @@ add_button = ctk.CTkButton(tab_insert_information, text='Add', command=write_new
 
 explain_label_expense = ctk.CTkLabel(tab_expense_tracker, text='See the information', font=('Arial', 20, 'bold')).pack(side='top', pady=20)
 
+combobox_expense_tracker = ctk.CTkComboBox(tab_expense_tracker, values=['Normal','Date', 'Price', 'Quantity'], command=change_order)
+combobox_expense_tracker.pack(side='top', pady=(0, 20))
+combobox_expense_tracker.set('Normal')
+
+checkbox = ctk.CTkCheckBox(tab_expense_tracker, text="Reverse", command=checkbox_event)
+checkbox.pack(side='top', pady=(0, 10))
+
 expense_tracker_list_box = ctk.CTkTextbox(tab_expense_tracker, width=800, height=500, font=('Courier', 14))
 expense_tracker_list_box.pack(side='top', pady=(0, 20))
 
@@ -173,6 +297,20 @@ expense_tracker_list_box.insert('0.0', 'Info will appear here...')
 
 expense_tracker()
 
+
+# -------------------- Product analyse tab --------------------
+
+explain_label_analyse = ctk.CTkLabel(tab_product_analyse, text='See the analyse', font=('Arial', 20, 'bold')).pack(side='top', pady=20)
+
+product_analyse_list_box = ctk.CTkTextbox(tab_product_analyse, width=800, height=250, font=('Courier', 14))
+product_analyse_list_box.pack(side='top', pady=(0, 20))
+
+product_analyse_list_box.insert('0.0', 'Info will appear here...')
+
+product_analyse_list_box2 = ctk.CTkTextbox(tab_product_analyse, width=800, height=250, font=('Courier', 14))
+product_analyse_list_box2.pack(side='top', pady=(0, 20))
+
+product_analyse()
 
 if __name__ == "__main__":
     app.mainloop()
