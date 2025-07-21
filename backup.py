@@ -34,7 +34,7 @@ def write_new_information():
     customer_id = customer_id_entry.get()
     quantity = quantity_entry.get()
     price = price_entry.get()
-    product_name = product_name_combo_box.get() # todo: find out how to get the combo selected
+    product_name = product_name_entry.get()
     date = date_entry.get()
 
     # Make a dict with their name and their corresponding value
@@ -103,10 +103,8 @@ def write_new_information():
             writer = csv.writer(csvfile)
             writer.writerow(data)
 
-            product_name = ctk.StringVar()  # متغیر برای نگه‌داشتن مقدار انتخاب شده
-
             # Add all text inputs in a list to iterate into it and delete the text in it
-            all_entry = [customer_id_entry, quantity_entry, price_entry, product_name, date_entry]
+            all_entry = [customer_id_entry, quantity_entry, price_entry, product_name_entry, date_entry]
             # Loop for iterate on the text inputs list
             for i in all_entry:
                 i.delete(0, 'end')
@@ -277,8 +275,8 @@ quantity_entry.pack(side='top', pady=(0, 20))
 price_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Price', width=300, height=40)
 price_entry.pack(side='top', pady=(0, 20))
 
-product_name_combo_box = ctk.CTkComboBox(tab_insert_information, idth=300, height=40)
-product_name_combo_box.pack(side='top', pady=(0, 20))
+product_name_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Product name', width=300, height=40)
+product_name_entry.pack(side='top', pady=(0, 20))
 
 date_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Date', width=300, height=40)
 date_entry.pack(side='top', pady=(0, 20))
