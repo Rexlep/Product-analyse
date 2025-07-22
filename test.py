@@ -1,20 +1,32 @@
 import customtkinter as ctk
 
+def update_total_price(*args):
+    try:
+        price = float(price_entry.get())
+        quantity = int(quantity_entry.get())
+        total = price * quantity
+        total_price_label.configure(text=f"Total Price: {total} $")
+    except ValueError:
+        total_price_label.configure(text="Total Price: -")
+
 app = ctk.CTk()
-app.geometry("300x200")
+app.geometry("400x300")
+app.title("Live Total Price")
 
-selected_value = ctk.StringVar()  # متغیر برای نگه‌داشتن مقدار انتخاب شده
+# Entry for price
+price_entry = ctk.CTkEntry(app, placeholder_text="Price")
+price_entry.pack(pady=10)
 
-def show():
-    global selected_value
-    print(selected_value.get())
+# Entry for quantity
+quantity_entry = ctk.CTkEntry(app, placeholder_text="Quantity")
+quantity_entry.pack(pady=10)
 
-# کمبوباکس
-combo = ctk.CTkComboBox(app, values=["Red", "Green", "Blue"], variable=selected_value)
-combo.pack(pady=20)
+# Label to show total price
+total_price_label = ctk.CTkLabel(app, text="Total Price: -", font=("Arial", 14))
+total_price_label.pack(pady=10)
 
-# دکمه‌ای برای استفاده از مقدار انتخاب‌شده
-btn = ctk.CTkButton(app, text="Show Selected", command=show)
-btn.pack(pady=10)
+# Bind both entries to call update function when changed
+price_entry.bind('<KeyRelease>', update_total_price)
+quantity_entry.bind('<KeyRelease>', update_total_price)
 
 app.mainloop()

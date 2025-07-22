@@ -4,6 +4,8 @@ import pandas as pd
 from CTkMessagebox import CTkMessagebox
 from datetime import datetime
 
+from docutils.nodes import entry
+
 
 # -------------------- Functions --------------------
 
@@ -34,7 +36,7 @@ def write_new_information():
     customer_id = customer_id_entry.get()
     quantity = quantity_entry.get()
     price = price_entry.get()
-    product_name = product_name_combo_box.get() # todo: find out how to get the combo selected
+    product_name = product_name_combo_box.get()
     date = date_entry.get()
 
     # Make a dict with their name and their corresponding value
@@ -103,10 +105,8 @@ def write_new_information():
             writer = csv.writer(csvfile)
             writer.writerow(data)
 
-            product_name = ctk.StringVar()  # متغیر برای نگه‌داشتن مقدار انتخاب شده
-
             # Add all text inputs in a list to iterate into it and delete the text in it
-            all_entry = [customer_id_entry, quantity_entry, price_entry, product_name, date_entry]
+            all_entry = [customer_id_entry, quantity_entry, price_entry, date_entry]
             # Loop for iterate on the text inputs list
             for i in all_entry:
                 i.delete(0, 'end')
@@ -244,12 +244,44 @@ def product_analyse():
     product_analyse_list_box.insert('0.0', grouped.to_string(index=False))
 
 
+def top_level():
+    """This function help you to add products into combobox"""
+    def write_product_name():
+        with open('list_of_products.txt', 'a') as product:
+            product.write(entry.get() + '\n')
+
+        entry.delete(0, ctk.END)
+        CTkMessagebox(title="Info", message=f"Product added")
+
+
+    top_level_window = ctk.CTkToplevel()
+    top_level_window.geometry('400x300')
+    top_level_window.grab_set()
+
+    label = ctk.CTkLabel(top_level_window, text='Product name', font=('Arial', 20)).pack(side='top', pady=20)
+    entry = ctk.CTkEntry(top_level_window, placeholder_text='Product name', width=300, height=40)
+    entry.pack(side='top', pady=20)
+
+    button = ctk.CTkButton(top_level_window, text='Add product name', command=write_product_name)
+    button.pack(side='top', pady=20)
+
+
+def update_total_price(*args):
+    try:
+        price = float(price_entry.get())
+        quantity = int(quantity_entry.get())
+
+        total = price * quantity
+        price_hint_label.configure(text=f"Total Price: {total}$")
+    except ValueError:
+        price_hint_label.configure(text="Total Price: -")
+
 # -------------------- UI --------------------
 
 
 app = ctk.CTk()
 app.title('Transaction tracker')
-app.geometry('800x550')
+app.geometry('530x600')
 
 main_frame = ctk.CTkFrame(app)
 main_frame.pack(fill='both', expand=True)
@@ -264,27 +296,46 @@ tab_customer_analyse = tabview.add('Customer analyse')
 
 
 # -------------------- Insert information tab --------------------
+list_of_product_names = []
 
+with open('list_of_products.txt', 'r') as f:
+    for i in f.readlines():
+        list_of_product_names.append(i.strip())
 
-explain_label = ctk.CTkLabel(tab_insert_information, text='Insert your info', font=('Arial', 20, 'bold')).pack(side='top', pady=20)
+explain_label = ctk.CTkLabel(tab_insert_information, text='Insert your info', font=('Arial', 20, 'bold'))
+explain_label.pack(side='top', pady=20)
 
 customer_id_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Customer ID', width=300, height=40)
-customer_id_entry.pack(side='top', pady=20)
+customer_id_entry.pack(side='top', pady=10)
 
 quantity_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Quantity', width=300, height=40)
-quantity_entry.pack(side='top', pady=(0, 20))
+quantity_entry.pack(side='top', pady=10)
+quantity_entry.bind('<KeyRelease>', update_total_price)
 
 price_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Price', width=300, height=40)
-price_entry.pack(side='top', pady=(0, 20))
+price_entry.pack(side='top', pady=10)
+price_entry.bind('<KeyRelease>', update_total_price)
 
-product_name_combo_box = ctk.CTkComboBox(tab_insert_information, idth=300, height=40)
-product_name_combo_box.pack(side='top', pady=(0, 20))
+# 🔹 لیبل کوچک زیر ورودی قیمت
+price_hint_label = ctk.CTkLabel(tab_insert_information, text='Enter price in numbers only', font=('Arial', 10), text_color='gray')
+price_hint_label.pack(side='top', anchor='w', padx=60, pady=(0, 10))  # سمت چپ
+
+product_name_combo_box = ctk.CTkComboBox(tab_insert_information, width=300, height=40, values=list_of_product_names)
+product_name_combo_box.pack(side='top', pady=10)
 
 date_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Date', width=300, height=40)
-date_entry.pack(side='top', pady=(0, 20))
+date_entry.insert(0, 'day/month/year')
+date_entry.pack(side='top', pady=10)
 
-add_button = ctk.CTkButton(tab_insert_information, text='Add', command=write_new_information).pack(side='top', pady=(0, 20))
+# 🔹 فریم برای دکمه‌ها
+button_frame = ctk.CTkFrame(tab_insert_information, fg_color="transparent")
+button_frame.pack(side='top', pady=20)
 
+add_product_name_button = ctk.CTkButton(button_frame, text='Add a product', command=top_level)
+add_product_name_button.pack(side='left', padx=10)
+
+add_button = ctk.CTkButton(button_frame, text='Add in file', command=write_new_information)
+add_button.pack(side='left', padx=10)
 
 # -------------------- Expense tracker tab --------------------
 
