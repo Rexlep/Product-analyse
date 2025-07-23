@@ -4,8 +4,11 @@ import pandas as pd
 from CTkMessagebox import CTkMessagebox
 from datetime import datetime
 
-from docutils.nodes import entry
+# This list is for add product names in combobox product name insert tab
+list_of_product_names = []
 
+# This list is for add the dates we extract in it
+list_of_dates = []
 
 # -------------------- Functions --------------------
 
@@ -53,11 +56,6 @@ def write_new_information():
         'Customer ID': customer_id,
         'Quantity': quantity,
     }
-
-    # hi my name is amir
-
-    listddd = [] 
-
 
     # Make a list to add the not True values in them
     not_number_fields = []
@@ -108,8 +106,8 @@ def write_new_information():
             # Add all text inputs in a list to iterate into it and delete the text in it
             all_entry = [customer_id_entry, quantity_entry, price_entry, date_entry]
             # Loop for iterate on the text inputs list
-            for i in all_entry:
-                i.delete(0, 'end')
+            for entry in all_entry:
+                entry.delete(0, 'end')
 
             # Show message when the data has been added
             CTkMessagebox(title="Info", message="The information added")
@@ -225,10 +223,8 @@ def product_analyse():
 
     date_sale = grouped.groupby('Date')['Quantity'].sum()
 
-    # This parts analyse the total sale
+    # These parts analyse the total sale
     total_sale = grouped.groupby('Month')['Quantity'].sum()
-
-    print(date_sale)
 
     for month, total in total_sale.items():
         if total > 10:
@@ -244,6 +240,15 @@ def product_analyse():
     product_analyse_list_box.insert('0.0', grouped.to_string(index=False))
 
 
+def extract_product_name():
+    """This function extracts product name from products.csv"""
+    global list_of_product_names
+
+    with open('list_of_products.txt', 'r') as f:
+        for i in f.readlines():
+            list_of_product_names.append(i.strip())
+
+
 def top_level():
     """This function help you to add products into combobox"""
     def write_product_name():
@@ -253,12 +258,12 @@ def top_level():
         entry.delete(0, ctk.END)
         CTkMessagebox(title="Info", message=f"Product added")
 
-
     top_level_window = ctk.CTkToplevel()
     top_level_window.geometry('400x300')
     top_level_window.grab_set()
 
-    label = ctk.CTkLabel(top_level_window, text='Product name', font=('Arial', 20)).pack(side='top', pady=20)
+    label = ctk.CTkLabel(top_level_window, text='Product name', font=('Arial', 20))
+    label.pack(side='top', pady=20)
     entry = ctk.CTkEntry(top_level_window, placeholder_text='Product name', width=300, height=40)
     entry.pack(side='top', pady=20)
 
@@ -267,6 +272,7 @@ def top_level():
 
 
 def update_total_price(*args):
+    """This function show the total price when you insert price and quantity"""
     try:
         price = float(price_entry.get())
         quantity = int(quantity_entry.get())
@@ -276,12 +282,46 @@ def update_total_price(*args):
     except ValueError:
         price_hint_label.configure(text="Total Price: -")
 
+
+def extract_dates():
+    global list_of_dates
+    df = pd.read_csv('products.csv')
+    dates = df['date']
+
+    for date in dates:
+        dt = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        only_date = dt.date()
+        list_of_dates.append(str(only_date))
+
+
+def show_exact_date():
+    selected_date = combobox_from_date.get()
+    df = pd.read_csv('products.csv')
+
+    df['date'] = pd.to_datetime(df['date'])
+
+    df['only_date'] = df['date'].dt.date
+
+    selected_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
+
+    matched_rows = df[df['only_date'] == selected_date]
+
+    matched_rows['total price'] = matched_rows['quantity'] * matched_rows['price']
+
+    expense_tracker_list_box.delete('0.0', 'end')
+
+    if not matched_rows.empty:
+        expense_tracker_list_box.insert('0.0', matched_rows.to_string(index=False))
+    else:
+        expense_tracker_list_box.insert('0.0', f'No data found for date: {selected_date}')
+
+
 # -------------------- UI --------------------
 
 
 app = ctk.CTk()
 app.title('Transaction tracker')
-app.geometry('530x600')
+app.geometry('830x600')
 
 main_frame = ctk.CTkFrame(app)
 main_frame.pack(fill='both', expand=True)
@@ -296,11 +336,8 @@ tab_customer_analyse = tabview.add('Customer analyse')
 
 
 # -------------------- Insert information tab --------------------
-list_of_product_names = []
 
-with open('list_of_products.txt', 'r') as f:
-    for i in f.readlines():
-        list_of_product_names.append(i.strip())
+extract_product_name()
 
 explain_label = ctk.CTkLabel(tab_insert_information, text='Insert your info', font=('Arial', 20, 'bold'))
 explain_label.pack(side='top', pady=20)
@@ -316,7 +353,6 @@ price_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Price', wid
 price_entry.pack(side='top', pady=10)
 price_entry.bind('<KeyRelease>', update_total_price)
 
-# 🔹 لیبل کوچک زیر ورودی قیمت
 price_hint_label = ctk.CTkLabel(tab_insert_information, text='Enter price in numbers only', font=('Arial', 10), text_color='gray')
 price_hint_label.pack(side='top', anchor='w', padx=60, pady=(0, 10))  # سمت چپ
 
@@ -327,7 +363,6 @@ date_entry = ctk.CTkEntry(tab_insert_information, placeholder_text='Date', width
 date_entry.insert(0, 'day/month/year')
 date_entry.pack(side='top', pady=10)
 
-# 🔹 فریم برای دکمه‌ها
 button_frame = ctk.CTkFrame(tab_insert_information, fg_color="transparent")
 button_frame.pack(side='top', pady=20)
 
@@ -344,6 +379,12 @@ explain_label_expense = ctk.CTkLabel(tab_expense_tracker, text='See the informat
 combobox_expense_tracker = ctk.CTkComboBox(tab_expense_tracker, values=['Normal','Date', 'Price', 'Quantity'], command=change_order)
 combobox_expense_tracker.pack(side='top', pady=(0, 20))
 combobox_expense_tracker.set('Normal')
+
+extract_dates()
+
+combobox_from_date = ctk.CTkComboBox(tab_expense_tracker, values=list_of_dates, command=change_order)
+combobox_from_date.pack(side='top', pady=(0, 20))
+combobox_from_date.set('')
 
 checkbox = ctk.CTkCheckBox(tab_expense_tracker, text="Reverse", command=checkbox_event)
 checkbox.pack(side='top', pady=(0, 10))
